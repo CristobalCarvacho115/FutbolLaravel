@@ -1,0 +1,166 @@
+Creas una carpeta, en cmd donde esa dentro de la carpeta pones: laravel new example
+Para levantar levantar pones: php artisan serve
+
+config\app.php
+    'timezone' => 'America/Santiago',
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+Ejemplo de como no repetir cosas en el archivo como el navbar, head, body, lo que esté dentro es opcional para no repetirlo
+
+* Dejar el navbar en una carpeta llamada layouts (por costumbre mundial o nombre tecnico) y el archivo master.blade.php
+* Donde queremos dejar nuestro contenido que varia dejamos
+
+@yield('contenido-principal')           nombre opcional pero para identificar
+
+* Y en los demás archivos dejamos
+
+@extends('layouts.master')              La extensión que es la carpeta y archivo (ejemplo navbar)
+
+@section('contenido-principal')         
+
+Y aquí dentro todo lo que queramos que aparezca donde en el otro lado dejamos yield
+
+@endsection
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+database\migrations
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+routes\web.php
+
+* Importar los controladores
+
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\EquiposController;
+use App\Http\Controllers\JugadoresController;
+
+
+* Direccionar a la página
+* Usar get, anotas el controlador y su función, en nombre pones nomCarpeta.nomArchivo
+
+Route::get('/',[HomeController::class,'index'])->name('home.index');
+Route::get('/login',[HomeController::class,'login'])->name('home.login');
+Route::get('/equipos',[EquiposController::class,'index'])->name('equipos.index');
+Route::get('/jugadores',[JugadoresController::class,'index'])->name('jugadores.index');
+
+
+* Para subir datos a la base de datos
+* Usar post, anotas el controlador y la función store, en nombre pones nomCarpeta.store
+
+Route::post('/equipos',[EquiposController::class,'store'])->name('equipos.store');
+Route::post('/jugadores',[JugadoresController::class,'store'])->name('jugadores.store');
+
+
+* Para borrar de forma lógica
+* Usar delete, anotas la página/{la tabla} de la cual borraremos la información, luego el controlador, la función store y de nombre nomCarpeta.destroy
+
+Route::delete('/equipos/{equipo}',[EquiposController::class,'destroy'])->name('equipos.destroy');
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+php artisan make:controller EjemplosController
+    
+app\Http\Controllers\EjemplosController.php
+
+* Para solo revelar la página se usa
+
+public function index(){
+    return view('home.index');
+}
+
+public function login(){
+    return view('home.login');
+}
+
+
+* Cuando es para mostrar, subir o eliminar información de tablas se importan los modelos de las tablas y adicional el request si subir o editar datos
+
+use App\Models\Jugador;
+use App\Models\Equipo;
+use Illuminate\Http\Request;
+
+
+* Para mostrar en las funciones principales hay que llamar a la tabla
+
+public function index(){
+        $equipos = Equipo::all();
+        return view('equipos.index',compact('equipos'));
+}
+
+public function index(){
+        $jugadores = Jugador::all();
+        $equipos = Equipo::all();
+        return view('jugadores.index',compact('jugadores','equipos'));
+    }
+
+* Para subir datos usamos la función store y de parametros ponemos request, luego hay que llamar a la tabla
+* le asignamos los datos del request a cada dato correspondiente de la tabla, luego guardamos con $ejemplo->save()
+* y por último siempre se debe redireccionar a la página en que estaba ya que para hacer esto usaremos ejemplos.store 
+
+public function store(Request $request){
+    $equipo = new Equipo();
+    $equipo->nombre = $request->nombre;
+    $equipo->entrenador = $request->entrenador;
+    $equipo->save();
+    return redirect()->route('equipos.index');
+}
+
+public function store(Request $request){
+    $jugador = new Jugador();
+    $jugador->apellido = $request->apellido;
+    $jugador->nombre = $request->nombre;
+    $jugador->posicion = $request->posicion;
+    $jugador->numero = $request->numero;
+    $jugador->equipo_id = $request->equipo;
+    $jugador->save();
+    return redirect()->route('jugadores.index');
+}
+
+
+* Para eliminar datos de la tabla hay usar la función destroy y de parametro la tabla
+* $tabla->delete();     esta es una forma lógica de eliminar datos de la tabla
+* Redireccionar a la página en que estabamos 
+
+public function destroy(Equipo $equipo){
+    $equipo->delete();
+    return redirect()->route('equipos.index');
+}
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+php artisan make:models Ejemplo
+app\Models
+
+* SE CREAN EN SINGULAS CON MAYUSCULA LA PRIMERA
+* Para crear las tablas se hace
+
+protected $table = 'jugadores';
+protected $table = 'equipos'; 
+
+* Para conectar con claves foraneas se usa
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+* En el modelo de Jugador ponemos
+* Un jugador pertenece a un equipo
+
+public function equipo(){
+    return $this->belongsTo('App\Models\Equipo');   Conectamos al modelo equipo
+}
+
+* En el modelo de Equipo ponemos
+* Un equipo tiene muchos jugadores
+
+public function jugadores(){
+    return $this->hasMany('App\Models\Jugador');    conectamos al modelo Jugador
+}
+
+
+
+* Si queremos añadir la función de borrado logico a una tabla importamos
+
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+* Y en la clase añadimos SoftDeletes
+
+use HasFactory,SoftDeletes;
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
